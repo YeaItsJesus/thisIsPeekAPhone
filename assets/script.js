@@ -6,19 +6,10 @@ var latestPhonesUrl = "http://phone-specs-api.azharimm.dev/latest";
 var phoneBrandsUrl = "http://phone-specs-api.azharimm.dev/brands";
 //list_brands: Endpoint:"/brands", Example":"http://phone-specs-api.azharimm.dev/brands"
 
-var phoneSpecsUrl =
-  "http://phone-specs-api.azharimm.dev/search?query={phoneNameGoesHere";
-//phone_specs: Endpoint:"/{phone_slug}" ,Example":"http://phone-specs-api.azharimm.dev/apple_iphone_12_pro_max-10237"
-
-var searchForPhoneUrl =
-  "http://phone-specs-api.azharimm.dev/search?query={user input goes here}";
-//search: Endpoint:"/search", Example":"http://phone-specs-api.azharimm.dev/search?query=Iphone 12 pro max"
-
 var searchTopPhonesByInterestUrl =
   "http://phone-specs-api.azharimm.dev/top-by-interest";
 //top_by_interest: Endpoint:"/top-by-interest", Example":"http://phone-specs-api.azharimm.dev/top-by-interest"
 
-//Calls latestPhones API
 function getLatestPhones() {
   fetch(latestPhonesUrl)
     .then(function (response) {
@@ -26,11 +17,81 @@ function getLatestPhones() {
       return response.json();
     })
     .then(function (data) {
-      //console log to review data received
-      //console.log(data.data.phones);
       //18 Latest Phones
-      //Each listed phones contains an image(phonesList[i].image) and phone name(phonesList[i].phone_name)
+      //Each listed phones contains an image(phonesList[i].image) and phone name(phonesList[i].phone_name and specs (phonesList[i].detail) and phone slug (phonesList[i].slug))
       var phonesList = data.data.phones;
+      //console.log(phonesList);
+      return phonesList;
+    })
+    .then(function (phonesList) {
+      var phones = [];
+
+      // Create an array of promises that will resolve with the phone specs data
+      var promises = phonesList.slice(0, 10).map(function (phone) {
+        return fetch(`http://phone-specs-api.azharimm.dev/${phone.slug}`)
+          .then(function (response) {
+            //Parses response into json
+            return response.json();
+          })
+          .then(function (data) {
+            //Get handle on phone specs
+            var phoneBrand = data.data.brand;
+            var phoneName = data.data.phone_name;
+            var releaseDate = data.data.release_date;
+            var storageOptions = data.data.storage;
+            var thumbnail = data.data.thumbnail;
+            var screenSize =
+              data.data.specifications[3].specs[1].val[0].split(",")[0];
+            var mainCamera = data.data.specifications[6].specs[0].val[0];
+            var frontCamera = data.data.specifications[7].specs[0].val[0];
+            var colorOptions = data.data.specifications[12].specs[0].val[0];
+            //var phonePrice = data.data.specifications[12].specs[4].val[0].split("/")[0];
+
+            phones.push({
+              phoneBrand: phoneBrand,
+              phoneName: phoneName,
+              releaseDate: releaseDate,
+              storageOptions: storageOptions,
+              thumbnail: thumbnail,
+              screenSize: screenSize,
+              mainCamera: mainCamera,
+              frontCamera: frontCamera,
+              colorOptions: colorOptions,
+            });
+          });
+      });
+
+      // Wait for all the promises to resolve before updating the HTML
+      Promise.all(promises).then(function () {
+        //Update HTML with phone specs
+        for (i = 0; i < 10; i++) {
+          var phoneDiv = $("#phone" + (i + 1));
+          phoneDiv
+            .find("#phone-name")
+            .text(phones[i].phoneBrand + " " + phones[i].phoneName);
+          phoneDiv
+            .find("#release-date")
+            .text("Release Date: " + phones[i].releaseDate);
+          phoneDiv
+            .find("#main-camera")
+            .text("Main Camera(s): " + phones[i].mainCamera);
+          phoneDiv
+            .find("#selfie-camera")
+            .text("Selfie Camera(s): " + phones[i].frontCamera);
+          phoneDiv
+            .find("#color-options")
+            .text("Color Options: " + phones[i].colorOptions);
+          phoneDiv
+            .find("#storage-options")
+            .text("Storage Options: " + phones[i].storageOptions);
+          phoneDiv
+            .find("#screen-size")
+            .text("Screen Size: " + phones[i].screenSize);
+          
+          phoneDiv.find("#phone-thumbnail").attr("src", phones[i].thumbnail);
+        }
+        console.log(phones);
+      });
     });
 }
 
@@ -38,7 +99,7 @@ getLatestPhones();
 
 /*
 //Calls phoneBrands API
-function getLatestPhones() {
+function getPhoneBrands() {
   fetch(phoneBrandsUrl)
     .then(function (response) {
       //Parses response into json
@@ -55,7 +116,7 @@ function getLatestPhones() {
 
 /*
 //Calls phoneSpecs API
-function getLatestPhones() {
+function getPhoneSpecs() {
   fetch(phoneSpecsUrl)
     .then(function (response) {
       //Parses response into json
@@ -71,34 +132,25 @@ function getLatestPhones() {
           //parses response into json
           return response.json();
         })
-        .then(function (phoneSpecs) {
-          //log phone specs array
-          console.log(phoneSpecs);
+        .then(function (data) {
+          console.log(data);
+          //phone specs
+          var phoneBrand = data.data.brand;
+          var phoneName = data.data.phone_name;
+          var releaseDate = data.data.release_date;
+          var storageOptions = data.data.storage;
+          var thumbnail = data.data.thumbnail;
+          var screenSize =
+            data.data.specifications[3].specs[1].val[0].split(",")[0];
+          var mainCamera = data.data.specifications[6].specs[0].val[0];
+          var frontCamera = data.data.specifications[7].specs[0].val[0];
+          var colorOptions = data.data.specifications[12].specs[0].val[0];
+          var phonePrice =
+            data.data.specifications[12].specs[4].val[0].split("/")[0];
         });
     });
   };
 */
-
-//Calls searchForPhone API
-function searchForPhone() {
-  fetch(searchForPhoneUrl)
-    .then(function (response) {
-      //Parses response into json
-      return response.json();
-    })
-    .then(function (data) {
-      //console log to review data received
-      //console.log(data);
-      //Phone
-      var phone = data.data.phones[0];
-      var phoneName = phone.phone_name;
-      var phoneImage = phone.image;
-      var phoneBrand = phone.brand;
-      //Search results return (brand, specs link "detail", image, phone_name)
-    });
-}
-
-searchForPhone();
 
 //Calls searchTopPhonesByInterest API
 function getTopPhones() {
@@ -115,4 +167,55 @@ function getTopPhones() {
     });
 }
 
-getTopPhones();
+//getTopPhones();
+
+var searchBar = $("#search-bar");
+var searchField = $("#search");
+
+//Searches For a Phone when user submits a search
+searchBar.submit(function (event) {
+  event.preventDefault(); // prevent default behavior of form submission
+  //Get searchfield value
+  var userInput = searchField.val();
+  //Calls searchForPhone API
+  fetch(`http://phone-specs-api.azharimm.dev/search?query=${userInput}`)
+    .then(function (response) {
+      //Parses response into json
+      return response.json();
+    })
+    .then(function (data) {
+      //console log to review data received
+      console.log(data);
+      //Phone
+      var phone = data.data.phones[0];
+      var phoneName = phone.phone_name;
+      var phoneImage = phone.image;
+      var phoneBrand = phone.brand;
+      var phoneSlug = phone.slug;
+      //Search results return (brand, specs link "detail", image, phone_name)
+
+      //Calls API to get specs
+      fetch(`http://phone-specs-api.azharimm.dev/${phoneSlug}`)
+        .then(function (response) {
+          //Parses response into json
+          return response.json();
+        })
+        .then(function (data) {
+          console.log(data);
+          //phone specs
+          var phoneBrand = data.data.brand;
+          var phoneName = data.data.phone_name;
+          var releaseDate = data.data.release_date;
+          var storageOptions = data.data.storage;
+          var thumbnail = data.data.thumbnail;
+          var screenSize =
+            data.data.specifications[3].specs[1].val[0].split(",")[0];
+          var mainCamera = data.data.specifications[6].specs[0].val[0];
+          var frontCamera = data.data.specifications[7].specs[0].val[0];
+          var colorOptions = data.data.specifications[12].specs[0].val[0];
+          var phonePrice =
+            data.data.specifications[12].specs[4].val[0].split("/")[0];
+        });
+    });
+    
+});
